@@ -6,7 +6,7 @@ import cron from 'node-cron';
 import rateLimit from 'express-rate-limit';
 
 // Import database initialization
-import initializeDatabase from './database/init-mysql.js';
+import initializeDatabase from './database/init.js';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
