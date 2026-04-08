@@ -81,9 +81,9 @@ class AggregationService {
         const students = await branchService.fetchBranchStudents(branch.base_url, branch.api_key);
         return students.map(student => ({
           ...student,
-          branchId: branch.id,
-          branchName: branch.name,
-          branchCode: branch.code
+          branch_id: branch.id,
+          branch_name: branch.name,
+          branch_code: branch.code
         }));
       });
 
@@ -108,9 +108,9 @@ class AggregationService {
         const staff = await branchService.fetchBranchStaff(branch.base_url, branch.api_key);
         return staff.map(member => ({
           ...member,
-          branchId: branch.id,
-          branchName: branch.name,
-          branchCode: branch.code
+          branch_id: branch.id,
+          branch_name: branch.name,
+          branch_code: branch.code
         }));
       });
 
@@ -233,9 +233,9 @@ class AggregationService {
         const classes = await branchService.fetchBranchClasses(branch.base_url, branch.api_key);
         return classes.map(cls => ({
           ...cls,
-          branchId: branch.id,
-          branchName: branch.name,
-          branchCode: branch.code
+          branch_id: branch.id,
+          branch_name: branch.name,
+          branch_code: branch.code
         }));
       });
 
