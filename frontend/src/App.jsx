@@ -7,6 +7,8 @@ import Students from './pages/Students';
 import Staff from './pages/Staff';
 import Finance from './pages/Finance';
 import Academics from './pages/Academics';
+import MarkLists from './pages/MarkLists';
+import Attendance from './pages/Attendance';
 import Layout from './components/Layout';
 import './App.css';
 
@@ -59,6 +61,8 @@ function App() {
                   <Route path="/staff" element={<Staff />} />
                   <Route path="/finance" element={<Finance />} />
                   <Route path="/academics" element={<Academics />} />
+                  <Route path="/marklists" element={<MarkLists />} />
+                  <Route path="/attendance" element={<Attendance />} />
                 </Routes>
               </Layout>
             ) : (

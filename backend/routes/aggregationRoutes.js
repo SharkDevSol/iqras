@@ -81,6 +81,17 @@ router.get('/classes', async (req, res) => {
   }
 });
 
+// Get all marklists from all branches
+router.get('/marklists', async (req, res) => {
+  try {
+    const marklists = await aggregationService.aggregateMarklists();
+    res.json(marklists);
+  } catch (error) {
+    console.error('Error fetching marklists:', error);
+    res.status(500).json({ error: 'Failed to fetch marklists' });
+  }
+});
+
 // Get schedule from all branches
 router.get('/schedule', async (req, res) => {
   try {

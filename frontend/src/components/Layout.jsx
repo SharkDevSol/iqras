@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FiHome, FiUsers, FiUserCheck, FiDollarSign, FiBook, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiHome, FiUsers, FiUserCheck, FiDollarSign, FiBook, FiFileText, FiCalendar, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import { useState } from 'react';
 import './Layout.css';
 
@@ -14,6 +14,8 @@ function Layout({ children, onLogout }) {
     { path: '/staff', icon: <FiUserCheck />, label: 'Staff' },
     { path: '/finance', icon: <FiDollarSign />, label: 'Finance' },
     { path: '/academics', icon: <FiBook />, label: 'Academics' },
+    { path: '/marklists', icon: <FiFileText />, label: 'Mark Lists' },
+    { path: '/attendance', icon: <FiCalendar />, label: 'Attendance' },
   ];
 
   return (

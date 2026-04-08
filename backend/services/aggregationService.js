@@ -322,6 +322,31 @@ class AggregationService {
     }
   }
 
+  // Aggregate marklists from all branches
+  async aggregateMarklists() {
+    try {
+      const branches = await this.getActiveBranches();
+      
+      const marklistPromises = branches.map(async (branch) => {
+        const marklists = await branchService.fetchBranchMarklists(branch.base_url, branch.api_key);
+        return marklists.map(marklist => ({
+          ...marklist,
+          branch_id: branch.id,
+          branch_name: branch.name,
+          branch_code: branch.code
+        }));
+      });
+
+      const results = await Promise.allSettled(marklistPromises);
+      return results
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value);
+    } catch (error) {
+      console.error('Error aggregating marklists:', error);
+      throw error;
+    }
+  }
+
   // Aggregate schedule from all branches
   async aggregateSchedule() {
     try {
