@@ -159,39 +159,33 @@ class AggregationService {
       const financePromises = branches.map(async (branch) => {
         const finance = await branchService.fetchBranchFinance(branch.base_url, branch.api_key);
         return {
-          branchId: branch.id,
-          branchName: branch.name,
-          branchCode: branch.code,
-          data: finance
+          branch_id: branch.id,
+          branch_name: branch.name,
+          branch_code: branch.code,
+          total_revenue: finance?.totalRevenue || 0,
+          total_pending: finance?.totalPending || 0,
+          total_paid: finance?.totalRevenue || 0, // Assuming paid = revenue for now
+          total_overdue: 0, // Not available in current API
+          total_invoices: 0 // Not available in current API
         };
       });
 
       const results = await Promise.allSettled(financePromises);
-      const branchFinance = results
+      const byBranch = results
         .filter(r => r.status === 'fulfilled')
         .map(r => r.value);
 
-      // Calculate totals
-      const totals = {
-        totalRevenue: 0,
-        totalExpenses: 0,
-        totalPending: 0,
-        netProfit: 0
+      // Calculate summary totals
+      const summary = {
+        total_revenue: byBranch.reduce((sum, b) => sum + (parseFloat(b.total_revenue) || 0), 0),
+        total_pending: byBranch.reduce((sum, b) => sum + (parseFloat(b.total_pending) || 0), 0),
+        total_paid: byBranch.reduce((sum, b) => sum + (parseFloat(b.total_paid) || 0), 0),
+        total_overdue: byBranch.reduce((sum, b) => sum + (parseFloat(b.total_overdue) || 0), 0)
       };
 
-      branchFinance.forEach(branch => {
-        if (branch.data) {
-          totals.totalRevenue += branch.data.totalRevenue || 0;
-          totals.totalExpenses += branch.data.totalExpenses || 0;
-          totals.totalPending += branch.data.totalPending || 0;
-        }
-      });
-
-      totals.netProfit = totals.totalRevenue - totals.totalExpenses;
-
       return {
-        totals,
-        branches: branchFinance
+        summary,
+        byBranch
       };
     } catch (error) {
       console.error('Error aggregating finance:', error);
@@ -207,17 +201,103 @@ class AggregationService {
       const academicPromises = branches.map(async (branch) => {
         const academics = await branchService.fetchBranchAcademics(branch.base_url, branch.api_key);
         return {
-          branchId: branch.id,
-          branchName: branch.name,
-          branchCode: branch.code,
+          branch_id: branch.id,
+          branch_name: branch.name,
+          branch_code: branch.code,
           data: academics
         };
       });
 
       const results = await Promise.allSettled(academicPromises);
-      return results
+      const branchAcademics = results
         .filter(r => r.status === 'fulfilled')
         .map(r => r.value);
+
+      // Aggregate subjects
+      const subjects = [];
+      branchAcademics.forEach(branch => {
+        if (branch.data?.subjects) {
+          branch.data.subjects.forEach(subject => {
+            subjects.push({
+              subject_name: subject.name || subject.subject_name,
+              grade: subject.grade || 'N/A',
+              branch_name: branch.branch_name,
+              branch_code: branch.branch_code,
+              status: 'Active'
+            });
+          });
+        }
+      });
+
+      // Aggregate classes
+      const classes = [];
+      branchAcademics.forEach(branch => {
+        if (branch.data?.classes) {
+          branch.data.classes.forEach(cls => {
+            classes.push({
+              class_name: cls.name || cls.class_name,
+              grade: cls.grade || cls.name,
+              branch_name: branch.branch_name,
+              branch_code: branch.branch_code,
+              student_count: cls.total_students || cls.student_count || 0
+            });
+          });
+        }
+      });
+
+      // Aggregate terms
+      const terms = [];
+      branchAcademics.forEach(branch => {
+        if (branch.data?.terms) {
+          branch.data.terms.forEach(term => {
+            terms.push({
+              term_name: term.name || term.term_name,
+              start_date: term.start_date,
+              end_date: term.end_date,
+              branch_name: branch.branch_name,
+              branch_code: branch.branch_code,
+              status: 'Active'
+            });
+          });
+        }
+      });
+
+      // Aggregate evaluations
+      const evaluations = [];
+      branchAcademics.forEach(branch => {
+        if (branch.data?.evaluations) {
+          const evalData = branch.data.evaluations;
+          // If evaluations is a summary object, create placeholder entries
+          if (evalData.totalEvaluations || evalData.total_evaluations) {
+            evaluations.push({
+              evaluation_name: 'Total Evaluations',
+              evaluation_type: 'Summary',
+              max_points: 100,
+              branch_name: branch.branch_name,
+              branch_code: branch.branch_code
+            });
+          }
+        }
+      });
+
+      // Calculate summary
+      const summary = {
+        total_subjects: subjects.length,
+        total_classes: classes.length,
+        total_terms: terms.length,
+        total_evaluations: evaluations.length,
+        total_mark_lists: branchAcademics.reduce((sum, b) => {
+          return sum + (b.data?.marks?.totalMarklists || b.data?.marks?.total_marklists || 0);
+        }, 0)
+      };
+
+      return {
+        summary,
+        subjects,
+        classes,
+        terms,
+        evaluations
+      };
     } catch (error) {
       console.error('Error aggregating academics:', error);
       throw error;
