@@ -7,7 +7,7 @@ function Academics() {
   const [academicsData, setAcademicsData] = useState(null);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('subjects');
+  const [activeTab, setActiveTab] = useState('classes');
   const [selectedBranch, setSelectedBranch] = useState('all');
 
   useEffect(() => {
@@ -34,9 +34,8 @@ function Academics() {
   }
 
   const summary = academicsData?.summary || {};
-  const subjects = academicsData?.subjects || [];
   const classes = academicsData?.classes || [];
-  const terms = academicsData?.terms || [];
+  const marklists = academicsData?.marklists || [];
   const evaluations = academicsData?.evaluations || [];
 
   const filterByBranch = (items) => {
@@ -59,34 +58,24 @@ function Academics() {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-label">Total Subjects</div>
-          <div className="stat-value">{summary.total_subjects || 0}</div>
-        </div>
-        <div className="stat-card">
           <div className="stat-label">Total Classes</div>
           <div className="stat-value">{summary.total_classes || 0}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Total Terms</div>
-          <div className="stat-value">{summary.total_terms || 0}</div>
+          <div className="stat-label">Total Mark Lists</div>
+          <div className="stat-value">{summary.total_mark_lists || 0}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Total Evaluations</div>
           <div className="stat-value">{summary.total_evaluations || 0}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Total Mark Lists</div>
-          <div className="stat-value">{summary.total_mark_lists || 0}</div>
+          <div className="stat-label">Total Students</div>
+          <div className="stat-value">{summary.total_students || 0}</div>
         </div>
       </div>
 
       <div className="tabs">
-        <button 
-          className={`tab ${activeTab === 'subjects' ? 'active' : ''}`}
-          onClick={() => setActiveTab('subjects')}
-        >
-          <FiBook /> Subjects
-        </button>
         <button 
           className={`tab ${activeTab === 'classes' ? 'active' : ''}`}
           onClick={() => setActiveTab('classes')}
@@ -94,10 +83,10 @@ function Academics() {
           <FiUsers /> Classes
         </button>
         <button 
-          className={`tab ${activeTab === 'terms' ? 'active' : ''}`}
-          onClick={() => setActiveTab('terms')}
+          className={`tab ${activeTab === 'marklists' ? 'active' : ''}`}
+          onClick={() => setActiveTab('marklists')}
         >
-          <FiCalendar /> Terms
+          <FiFileText /> Mark Lists
         </button>
         <button 
           className={`tab ${activeTab === 'evaluations' ? 'active' : ''}`}
@@ -116,35 +105,6 @@ function Academics() {
             ))}
           </select>
         </div>
-
-        {activeTab === 'subjects' && (
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Subject Name</th>
-                  <th>Grade</th>
-                  <th>Branch</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filterByBranch(subjects).map((subject, index) => (
-                  <tr key={index}>
-                    <td>{subject.subject_name}</td>
-                    <td>
-                      <span className="grade-badge">{subject.grade}</span>
-                    </td>
-                    <td>
-                      <span className="branch-tag">{subject.branch_name}</span>
-                    </td>
-                    <td>{subject.status || 'Active'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
 
         {activeTab === 'classes' && (
           <div className="table-container">
@@ -175,28 +135,38 @@ function Academics() {
           </div>
         )}
 
-        {activeTab === 'terms' && (
+        {activeTab === 'marklists' && (
           <div className="table-container">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Term Name</th>
-                  <th>Start Date</th>
-                  <th>End Date</th>
+                  <th>Student Name</th>
+                  <th>Class</th>
+                  <th>Exam</th>
+                  <th>Subject</th>
+                  <th>Marks</th>
+                  <th>Total</th>
                   <th>Branch</th>
-                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {filterByBranch(terms).map((term, index) => (
+                {filterByBranch(marklists).map((marklist, index) => (
                   <tr key={index}>
-                    <td>{term.term_name}</td>
-                    <td>{term.start_date ? new Date(term.start_date).toLocaleDateString() : 'N/A'}</td>
-                    <td>{term.end_date ? new Date(term.end_date).toLocaleDateString() : 'N/A'}</td>
+                    <td>{marklist.student_name}</td>
                     <td>
-                      <span className="branch-tag">{term.branch_name}</span>
+                      <span className="grade-badge">{marklist.class_name}</span>
                     </td>
-                    <td>{term.status || 'Active'}</td>
+                    <td>{marklist.exam_name}</td>
+                    <td>{marklist.subject_name}</td>
+                    <td>
+                      <span className={`score-badge ${getScoreClass(marklist.marks_obtained)}`}>
+                        {marklist.marks_obtained}
+                      </span>
+                    </td>
+                    <td>{marklist.total_marks}</td>
+                    <td>
+                      <span className="branch-tag">{marklist.branch_name}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

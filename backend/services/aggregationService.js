@@ -199,16 +199,18 @@ class AggregationService {
       const branches = await this.getActiveBranches();
       
       const academicPromises = branches.map(async (branch) => {
-        const [academics, classes] = await Promise.all([
+        const [academics, classes, marklists] = await Promise.all([
           branchService.fetchBranchAcademics(branch.base_url, branch.api_key),
-          branchService.fetchBranchClasses(branch.base_url, branch.api_key)
+          branchService.fetchBranchClasses(branch.base_url, branch.api_key),
+          branchService.fetchBranchMarklists(branch.base_url, branch.api_key)
         ]);
         return {
           branch_id: branch.id,
           branch_name: branch.name,
           branch_code: branch.code,
           data: academics,
-          classes: classes
+          classes: classes,
+          marklists: marklists
         };
       });
 
@@ -217,22 +219,6 @@ class AggregationService {
         .filter(r => r.status === 'fulfilled')
         .map(r => r.value);
 
-      // Aggregate subjects
-      const subjects = [];
-      branchAcademics.forEach(branch => {
-        if (branch.data?.subjects) {
-          branch.data.subjects.forEach(subject => {
-            subjects.push({
-              subject_name: subject.name || subject.subject_name,
-              grade: subject.grade || 'N/A',
-              branch_name: branch.branch_name,
-              branch_code: branch.branch_code,
-              status: 'Active'
-            });
-          });
-        }
-      });
-
       // Aggregate classes
       const classes = [];
       branchAcademics.forEach(branch => {
@@ -240,7 +226,7 @@ class AggregationService {
           branch.classes.forEach(cls => {
             classes.push({
               class_name: cls.name || cls.class_name,
-              grade: cls.name || cls.grade, // Use name as grade since they're the same (GRADE10, etc.)
+              grade: cls.name || cls.grade,
               branch_name: branch.branch_name,
               branch_code: branch.branch_code,
               student_count: cls.total_students || cls.student_count || 0
@@ -249,18 +235,20 @@ class AggregationService {
         }
       });
 
-      // Aggregate terms
-      const terms = [];
+      // Aggregate marklists
+      const marklists = [];
       branchAcademics.forEach(branch => {
-        if (branch.data?.terms) {
-          branch.data.terms.forEach(term => {
-            terms.push({
-              term_name: term.name || term.term_name,
-              start_date: term.start_date,
-              end_date: term.end_date,
+        if (branch.marklists && Array.isArray(branch.marklists)) {
+          branch.marklists.forEach(marklist => {
+            marklists.push({
+              student_name: marklist.student_name,
+              class_name: marklist.class_name || marklist.grade,
+              exam_name: marklist.exam_name,
+              subject_name: marklist.subject_name,
+              marks_obtained: marklist.marks_obtained || marklist.marks,
+              total_marks: marklist.total_marks,
               branch_name: branch.branch_name,
-              branch_code: branch.branch_code,
-              status: 'Active'
+              branch_code: branch.branch_code
             });
           });
         }
@@ -271,7 +259,6 @@ class AggregationService {
       branchAcademics.forEach(branch => {
         if (branch.data?.evaluations) {
           const evalData = branch.data.evaluations;
-          // If evaluations is a summary object, create placeholder entries
           if (evalData.totalEvaluations || evalData.total_evaluations) {
             const count = evalData.totalEvaluations || evalData.total_evaluations;
             if (count > 0) {
@@ -289,23 +276,19 @@ class AggregationService {
 
       // Calculate summary
       const summary = {
-        total_subjects: subjects.length,
         total_classes: classes.length,
-        total_terms: terms.length,
+        total_mark_lists: marklists.length,
         total_evaluations: branchAcademics.reduce((sum, b) => {
           const evalData = b.data?.evaluations;
           return sum + (evalData?.totalEvaluations || evalData?.total_evaluations || 0);
         }, 0),
-        total_mark_lists: branchAcademics.reduce((sum, b) => {
-          return sum + (b.data?.marks?.totalMarklists || b.data?.marks?.total_marklists || 0);
-        }, 0)
+        total_students: classes.reduce((sum, cls) => sum + cls.student_count, 0)
       };
 
       return {
         summary,
-        subjects,
         classes,
-        terms,
+        marklists,
         evaluations
       };
     } catch (error) {

@@ -142,6 +142,18 @@ class BranchService {
     }
   }
 
+  // Fetch all marklists from a branch
+  async fetchBranchMarklists(branchUrl, apiKey = null) {
+    try {
+      const client = this.createBranchClient(branchUrl, apiKey);
+      const response = await client.get('/api/mark-list/all');
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching marklists from ${branchUrl}:`, error.message);
+      return [];
+    }
+  }
+
   // Fetch class data from a branch
   async fetchBranchClasses(branchUrl, apiKey = null) {
     try {
