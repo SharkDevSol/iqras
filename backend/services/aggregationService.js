@@ -199,12 +199,16 @@ class AggregationService {
       const branches = await this.getActiveBranches();
       
       const academicPromises = branches.map(async (branch) => {
-        const academics = await branchService.fetchBranchAcademics(branch.base_url, branch.api_key);
+        const [academics, classes] = await Promise.all([
+          branchService.fetchBranchAcademics(branch.base_url, branch.api_key),
+          branchService.fetchBranchClasses(branch.base_url, branch.api_key)
+        ]);
         return {
           branch_id: branch.id,
           branch_name: branch.name,
           branch_code: branch.code,
-          data: academics
+          data: academics,
+          classes: classes
         };
       });
 
@@ -232,11 +236,11 @@ class AggregationService {
       // Aggregate classes
       const classes = [];
       branchAcademics.forEach(branch => {
-        if (branch.data?.classes) {
-          branch.data.classes.forEach(cls => {
+        if (branch.classes && Array.isArray(branch.classes)) {
+          branch.classes.forEach(cls => {
             classes.push({
               class_name: cls.name || cls.class_name,
-              grade: cls.grade || cls.name,
+              grade: cls.name || cls.grade, // Use name as grade since they're the same (GRADE10, etc.)
               branch_name: branch.branch_name,
               branch_code: branch.branch_code,
               student_count: cls.total_students || cls.student_count || 0
@@ -269,13 +273,16 @@ class AggregationService {
           const evalData = branch.data.evaluations;
           // If evaluations is a summary object, create placeholder entries
           if (evalData.totalEvaluations || evalData.total_evaluations) {
-            evaluations.push({
-              evaluation_name: 'Total Evaluations',
-              evaluation_type: 'Summary',
-              max_points: 100,
-              branch_name: branch.branch_name,
-              branch_code: branch.branch_code
-            });
+            const count = evalData.totalEvaluations || evalData.total_evaluations;
+            if (count > 0) {
+              evaluations.push({
+                evaluation_name: `${branch.branch_name} Evaluations`,
+                evaluation_type: 'Summary',
+                max_points: 100,
+                branch_name: branch.branch_name,
+                branch_code: branch.branch_code
+              });
+            }
           }
         }
       });
@@ -285,7 +292,10 @@ class AggregationService {
         total_subjects: subjects.length,
         total_classes: classes.length,
         total_terms: terms.length,
-        total_evaluations: evaluations.length,
+        total_evaluations: branchAcademics.reduce((sum, b) => {
+          const evalData = b.data?.evaluations;
+          return sum + (evalData?.totalEvaluations || evalData?.total_evaluations || 0);
+        }, 0),
         total_mark_lists: branchAcademics.reduce((sum, b) => {
           return sum + (b.data?.marks?.totalMarklists || b.data?.marks?.total_marklists || 0);
         }, 0)
